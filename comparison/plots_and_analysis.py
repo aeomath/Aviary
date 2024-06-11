@@ -44,7 +44,7 @@ def mass_breakdown_bar_plot_av(
     i = int(len(fig.data) / 2) % 10
 
 
-    if oad == 'Aviary':
+    if oad == 'AVIARY':
         mzfw = prob.get_val(av.Aircraft.Design.ZERO_FUEL_MASS,units='kg')[0]
         mtow = prob.get_val(av.Mission.Design.GROSS_MASS,units='kg')[0]
         owe = prob.get_val(av.Aircraft.Design.OPERATING_MASS,units='kg')[0]
@@ -56,7 +56,8 @@ def mass_breakdown_bar_plot_av(
             prob.get_val(av.Aircraft.CrewPayload.FLIGHT_CREW_MASS, units="kg")[0],
             prob.get_val(av.Aircraft.Furnishings.MASS ,units="kg")[0],
             prob.get_val(av.Aircraft.Propulsion.MASS, units="kg")[0],
-            prob.get_val(av.Aircraft.Design.SYSTEMS_EQUIP_MASS, units="kg")[0],     
+            prob.get_val(av.Aircraft.Design.SYSTEMS_EQUIP_MASS, units="kg")[0],  
+            prob.get_val(av.Aircraft.Wing.MASS, units="kg")[0]
         ]
     # pylint: disable=unbalanced-tuple-unpacking # It is balanced for the parameters provided
     elif oad == 'FAST-OAD':
@@ -76,6 +77,7 @@ def mass_breakdown_bar_plot_av(
         
         # Get data:weight decomposition
         owe_decomp,owe_label, _ = foad._data_weight_decomposition(variables, owe=None)
+        owe_decomp.append(variables["data:weight:airframe:wing:mass"].value[0])
 
     weight_labels = ["MTOW" , "MZFW" , "OWE", "Fuel - Mission", "Payload"]
     weight_values =  [mtow , mzfw , owe, fuel_mission, payload]
@@ -86,7 +88,7 @@ def mass_breakdown_bar_plot_av(
     )
     
      # Get data:weight decomposition
-    owe_label = ["airframe", "crew","furniture","propulsion","systems","operational"]
+    owe_label = ["airframe", "crew","furniture","propulsion","systems","wing"]
     fig.add_trace(
         go.Bar(name=name, x=owe_label, y=owe_decomp, marker_color=COLS[i]),
         row=1,
@@ -95,6 +97,47 @@ def mass_breakdown_bar_plot_av(
   
 
     fig.update_layout(yaxis_title="[kg]")
-
+    print(owe_decomp)
     return fig
 
+def geometry_mass_bar(name=None, aircraft_file_path = None , oad="AVIARY",prob = None ,file_formatter = None,fig = None)-> go.FigureWidget:
+    if fig is None:
+        fig = make_subplots(
+            rows=1,
+            cols=1,
+            subplot_titles=("Geometry Mass Breakdown"),
+        )
+    # Same color for each aircraft configuration
+    i = int(len(fig.data) / 1) % 10
+    if oad == 'AVIARY':
+        wing_mass = prob.get_val(av.Aircraft.Wing.MASS,units='kg')[0]
+        fuselage_mass = prob.get_val(av.Aircraft.Fuselage.MASS,units='kg')[0]
+        htail_mass = prob.get_val(av.Aircraft.HorizontalTail.MASS,units='kg')[0]
+        vtail_mass = prob.get_val(av.Aircraft.VerticalTail.MASS,units='kg')[0]
+        engine_mass = prob.get_val(av.Aircraft.Propulsion.TOTAL_ENGINE_MASS,units='kg')[0]
+    
+    # pylint: disable=unbalanced-tuple-unpacking # It is balanced for the parameters provided
+    elif oad == 'FAST-OAD':
+        variables = VariableIO(aircraft_file_path, file_formatter).read()
+
+        var_names_and_new_units = {
+            "data:weight:airframe:wing:mass": "kg",
+            "data:weight:airframe:fuselage:mass": "kg",
+            "data:weight:airframe:horizontal_tail:mass": "kg",
+            "data:weight:airframe:vertical_tail:mass": "kg",
+            "data:weight:propulsion:engine:mass": "kg"
+            
+        }
+
+        # pylint: disable=unbalanced-tuple-unpacking # It is balanced for the parameters provided
+        wing_mass,fuselage_mass,htail_mass,vtail_mass,engine_mass = foad._get_variable_values_with_new_units(variables, var_names_and_new_units)
+        
+    weight_labels = ["Wing" , "Fuselage" , "Horizontal Tail", "Vertical Tail", "Engine"]
+    weight_values =  [wing_mass , fuselage_mass , htail_mass, vtail_mass,engine_mass]
+    fig.add_trace(
+        go.Bar(name=name, x=weight_labels, y=weight_values, marker_color=COLS[i], showlegend=True),
+        row=1,
+        col=1,
+    )
+    fig.update_layout(yaxis_title="[kg]")
+    return fig
