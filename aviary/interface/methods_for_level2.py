@@ -2332,7 +2332,7 @@ class AviaryProblem(om.Problem):
 
         if self.aviary_inputs.get_val('verbosity').value >= 2:
             with open('output_list.txt', 'w') as outfile:
-                self.model.list_outputs(out_stream=outfile)
+                self.model.list_outputs(out_stream=outfile,units=True)
 
         return failed
 
