@@ -5,7 +5,7 @@ import fastoad.gui as foad
 from variable_wing import PositionWing
 from variable_wing import Aircraft
 import post_process_geo as ppg
-
+import OpenConcept.read_output as op
 phase_info = {
     "pre_mission": {"include_takeoff": False, "optimize_mass": False},
     "climb_1": {
@@ -99,23 +99,28 @@ clear_reports()
 #run aviary problem
 prob = ap.aviary_run_problem("aviary/models/test_aircraft/CERAS.csv",
                              phase_info = phase_info,
-                             debug=False,
+                             debug=True,
                              optimizer="IPOPT",
                              record_filename="history.db",
                              Analysis_scheme=av.AnalysisScheme.COLLOCATION,
                              )
 
+
 #post process the results with fast oad files and aviary
 FAST_OUTPUT = "oad_sizing_out.xml"
+OPEN_OUTPUT = "/home/aeomath/Bureau/ADAM/SUPAERO/DCAS/openconcept/output_list.txt"
+
 print(prob.get_val(av.Aircraft.Wing.ASPECT_RATIO)[0])
 fig = ppg.wing_geometry_plot(prob,name="AVIARY")
 fig = foad.wing_geometry_plot(FAST_OUTPUT, name="FAST-OAD", fig=fig)
 fig2 = pla.mass_breakdown_bar_plot_av(prob=prob,name = "AVIARY Ceras",oad='AVIARY')
 fig2 = pla.mass_breakdown_bar_plot_av(FAST_OUTPUT, name="FAST-OAD_ceras",oad='FAST-OAD',fig=fig2)
+fig2 = pla.mass_breakdown_bar_plot_av(OPEN_OUTPUT, name="OPENCONCEPT",oad='OPENCONCEPT',fig=fig2)
 fig3 = ppg.aircraft_geometry_plot(prob,name="AVIARY")
 fig3 = foad.aircraft_geometry_plot(FAST_OUTPUT, name="FAST-OAD", fig=fig3)
 fig4 = pla.geometry_mass_bar(prob=prob,name="AVIARY",oad='AVIARY')
 fig4 = pla.geometry_mass_bar(aircraft_file_path=FAST_OUTPUT, name="FAST-OAD", fig=fig4,oad='FAST-OAD')
+fig4 = pla.geometry_mass_bar(aircraft_file_path=OPEN_OUTPUT, name="OPENCONCEPT", fig=fig4,oad='OPENCONCEPT')
 fig.show()
 fig2.show()
 fig3.show()
