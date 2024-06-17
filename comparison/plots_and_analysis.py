@@ -7,6 +7,7 @@ import fastoad.gui  as foad
 from openmdao.utils.units import convert_units
 from plotly.subplots import make_subplots
 from fastoad.io import VariableIO
+from OpenConcept.read_output import get_variable_value
 COLS = px.colors.qualitative.Plotly
 
 
@@ -78,7 +79,37 @@ def mass_breakdown_bar_plot_av(
         # Get data:weight decomposition
         owe_decomp,owe_label, _ = foad._data_weight_decomposition(variables, owe=None)
         owe_decomp.append(variables["data:weight:airframe:wing:mass"].value[0])
-
+    elif oad == "OPENCONCEPT":
+        mtow = get_variable_value(aircraft_file_path, "ac|weights|MTOW", "kg")
+        mzfw = 0 #get_variable_value(aircraft_file_path, "ac|weights|MZFW", "kg")
+        owe = get_variable_value(aircraft_file_path, "ac|weights|OEW", "kg")
+        fuel_mission = get_variable_value(aircraft_file_path, "mission.descent.fuel_burn_integ.fuel_burn_final", "kg") ## Without reserve
+        reserve_final = get_variable_value(aircraft_file_path, "mission.reserve_descent.fuel_burn_integ.fuel_burn_final", "kg")
+        mlw = get_variable_value(aircraft_file_path, "ac|weights|MLW", "kg")
+        mzfw = mlw - (reserve_final-fuel_mission)
+        payload = get_variable_value(aircraft_file_path, "ac|weights|W_payload", "kg")
+    
+        owe_decomp = [
+            ## Airframe
+            get_variable_value(aircraft_file_path, "empty_weight.W_structure", "kg"),
+            0,# crew 
+            ## Furniture
+            get_variable_value(aircraft_file_path, "empty_weight.W_furnishings", "kg"),
+            ## Propulsion
+            get_variable_value(aircraft_file_path, "empty_weight.W_engines", "kg")\
+            + get_variable_value(aircraft_file_path, "empty_weight.W_thrust_rev", "kg")\
+            + get_variable_value(aircraft_file_path, "empty_weight.W_fuelsystem", "kg")\
+            + get_variable_value(aircraft_file_path, "empty_weight.W_eng_start", "kg")\
+            + get_variable_value(aircraft_file_path, "empty_weight.W_eng_control", "kg"), 
+            ## Systems
+            get_variable_value(aircraft_file_path,"empty_weight.equipment.W_flight_controls","kg")\
+            + get_variable_value(aircraft_file_path,"empty_weight.equipment.W_avionics","kg")\
+            + get_variable_value(aircraft_file_path,"empty_weight.equipment.W_electrical","kg")\
+            + get_variable_value(aircraft_file_path,"empty_weight.equipment.W_ac_pressurize_antiice","kg")\
+            + get_variable_value(aircraft_file_path,"empty_weight.equipment.W_oxygen ","kg")\
+            + get_variable_value(aircraft_file_path,"empty_weight.equipment.W_APU","kg"),
+            get_variable_value(aircraft_file_path, "empty_weight.W_wing", "kg")
+        ]
     weight_labels = ["MTOW" , "MZFW" , "OWE", "Fuel - Mission", "Payload"]
     weight_values =  [mtow , mzfw , owe, fuel_mission, payload]
     fig.add_trace(
@@ -86,7 +117,7 @@ def mass_breakdown_bar_plot_av(
         row=1,
         col=1,
     )
-    
+
      # Get data:weight decomposition
     owe_label = ["airframe", "crew","furniture","propulsion","systems","wing"]
     fig.add_trace(
@@ -94,6 +125,26 @@ def mass_breakdown_bar_plot_av(
         row=1,
         col=2,
     )
+    if oad == 'OPENCONCEPT':
+        fig.add_shape(
+            type="line",
+            x0=0.1,
+            y0=owe_decomp[0]/1.2,
+            x1=0.45,
+            y1=owe_decomp[0]/1.2,
+            line=dict(color="black", width=2),
+            row=1,
+            col=2,
+        )
+        fig.add_annotation(
+            x=1.0,
+            y=owe_decomp[0]/1.2+500,
+            text="without correction factor",
+            showarrow=False,
+            font=dict(size=12),
+            row=1,
+            col=2,
+        )
   
 
     fig.update_layout(yaxis_title="[kg]")
@@ -131,6 +182,16 @@ def geometry_mass_bar(name=None, aircraft_file_path = None , oad="AVIARY",prob =
 
         # pylint: disable=unbalanced-tuple-unpacking # It is balanced for the parameters provided
         wing_mass,fuselage_mass,htail_mass,vtail_mass,engine_mass = foad._get_variable_values_with_new_units(variables, var_names_and_new_units)
+    elif oad == "OPENCONCEPT":
+        wing_mass = get_variable_value(aircraft_file_path, "empty_weight.W_wing", "kg")
+        fuselage_mass = get_variable_value(aircraft_file_path, "empty_weight.W_fuselage", "kg")
+        htail_mass = get_variable_value(aircraft_file_path, "empty_weight.W_hstab"  , "kg")
+        vtail_mass = get_variable_value(aircraft_file_path, "empty_weight.W_vstab", "kg")
+        engine_mass = get_variable_value(aircraft_file_path, "empty_weight.W_engines", "kg")\
+            + get_variable_value(aircraft_file_path, "empty_weight.W_thrust_rev", "kg")\
+            + get_variable_value(aircraft_file_path, "empty_weight.W_fuelsystem", "kg")\
+            + get_variable_value(aircraft_file_path, "empty_weight.W_eng_start", "kg")\
+            + get_variable_value(aircraft_file_path, "empty_weight.W_eng_control", "kg")                
         
     weight_labels = ["Wing" , "Fuselage" , "Horizontal Tail", "Vertical Tail", "Engine"]
     weight_values =  [wing_mass , fuselage_mass , htail_mass, vtail_mass,engine_mass]
