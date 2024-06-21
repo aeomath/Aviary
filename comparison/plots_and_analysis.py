@@ -50,7 +50,9 @@ def mass_breakdown_bar_plot_av(
         mtow = prob.get_val(av.Mission.Design.GROSS_MASS,units='kg')[0]
         owe = prob.get_val(av.Aircraft.Design.OPERATING_MASS,units='kg')[0]
         payload = prob.get_val(av.Aircraft.CrewPayload.TOTAL_PAYLOAD_MASS,units='kg')[0]
-        fuel_mission = prob.get_val(av.Mission.Summary.FUEL_BURNED,units='kg')[0]
+        fuel_mission = prob.get_val(av.Mission.Summary.FUEL_BURNED,units='kg')[0]## without reserve
+        reserve_fuel = prob.get_val(av.Mission.Design.RESERVE_FUEL,units='kg')[0]
+        #fuel_mission+=reserve_fuel
     
         owe_decomp = [
             prob.get_val(av.Aircraft.Design.STRUCTURE_MASS, units="kg")[0],
@@ -69,7 +71,7 @@ def mass_breakdown_bar_plot_av(
             "data:weight:aircraft:MZFW": "kg",
             "data:weight:aircraft:OWE": "kg",
             "data:weight:aircraft:payload": "kg",
-            "data:weight:aircraft:sizing_onboard_fuel_at_input_weight": "kg",
+            "data:mission:MTOW_mission:main_route:fuel": "kg", ## Without reserve
             
         }
 

@@ -1,3 +1,4 @@
+from copy import deepcopy
 import aviary_problems as ap
 import aviary.api as av
 import plots_and_analysis as pla
@@ -28,7 +29,7 @@ phase_info = {
             "constrain_final": False,
             "fix_duration": False,
             "initial_bounds": ((0.0, 0.0), "min"),
-            "duration_bounds": ((0, 1000.0), "min"),
+            "duration_bounds": ((0, 500.0), "min"),
         },
         "initial_guesses": {"time": ([0, 67], "min")},
     },
@@ -54,7 +55,7 @@ phase_info = {
             "initial_bounds": ((0, 1000.0), "min"),
             "duration_bounds": ((0, 1000.5), "min"),
         },
-        "initial_guesses": {"time": ([54, 311], "min")},
+        "initial_guesses": {"time": ([5, 1000], "min")},
     },
     "descent_1": {
         "subsystem_options": {"core_aerodynamics": {"method": "computed"}},
@@ -85,6 +86,82 @@ phase_info = {
         "constrain_range": False,
         "target_range": (2500, "nmi"),
     },
+    "reserve_climb": {
+        "subsystem_options": {"core_aerodynamics": {"method": "computed"}},
+        "user_options": {
+            "reserve": True,
+            "optimize_mach": False,
+            "optimize_altitude": False,
+            "polynomial_control_order": 1,
+            "num_segments": 2,
+            "order": 3,
+            "solve_for_distance": False,
+            "initial_mach": (0.2, "unitless"),
+            "final_mach": (0.72, "unitless"),
+            "mach_bounds": ((0.18, 0.74), "unitless"),
+            "initial_altitude": (0.0, "ft"),
+            "final_altitude": (22000.0, "ft"),
+            "altitude_bounds": ((0.0, 22500.0), "ft"),
+            "throttle_enforcement": "path_constraint",
+            "fix_initial": True,
+            "constrain_final": False,
+            "fix_duration": False,
+            "initial_bounds": ((0.0, 0.0), "min"),
+            "duration_bounds": ((0, 500.0), "min"),
+        },
+        "initial_guesses": {"time": ([0, 67], "min")},
+    },
+    "reserve_cruise": {
+        "subsystem_options": {"core_aerodynamics": {"method": "computed"}},
+        "user_options": {
+            "reserve": True,
+            "optimize_mach": False,
+            "optimize_altitude": False,
+            "polynomial_control_order": 1,
+            "target_distance": (200, "km"),
+            "num_segments": 2,
+            "order": 3,
+            "solve_for_distance": False,
+            "initial_mach": (0.72, "unitless"),
+            "final_mach": (0.72, "unitless"),
+            "mach_bounds": ((0.7, 0.74), "unitless"),
+            "initial_altitude": (22000.0, "ft"),
+            "final_altitude": (22000.0, "ft"),
+            "altitude_bounds": ((15000.0, 35500.0), "ft"),
+            "throttle_enforcement": "boundary_constraint",
+            "fix_initial": False,
+            "constrain_final": False,
+            "fix_duration": False,
+            "initial_bounds": ((0, 1000.0), "min"),
+            "duration_bounds": ((0, 1000.5), "min"),
+        },
+        "initial_guesses": {"time": ([5, 990], "min")},
+},
+    "reserve_descent": {
+        "subsystem_options": {"core_aerodynamics": {"method": "computed"}},
+        "user_options": {
+            "reserve": True,
+            "optimize_mach": False,
+            "optimize_altitude": False,
+            "polynomial_control_order": 1,
+            "num_segments": 2,
+            "order": 3,
+            "solve_for_distance": False,
+            "initial_mach": (0.72, "unitless"),
+            "final_mach": (0.2, "unitless"),
+            "mach_bounds": ((0.18, 0.74), "unitless"),
+            "initial_altitude": (22000.0, "ft"),
+            "final_altitude": (500.0, "ft"),
+            "altitude_bounds": ((0.0, 22500.0), "ft"),
+            "throttle_enforcement": "path_constraint",
+            "fix_initial": False,
+            "constrain_final": True,
+            "fix_duration": False,
+            "initial_bounds": ((0, 1000.5), "min"),
+            "duration_bounds": ((0, 1000.5), "min"),
+        },
+        "initial_guesses": {"time": ([0, 600], "min")},
+    },
 }
 
 
@@ -97,12 +174,14 @@ clear_reports()
 # phase_info['pre_mission']['external_subsystems'] = [PositionWing()]
 
 #run aviary problem
-prob = ap.aviary_run_problem("aviary/models/test_aircraft/CERAS.csv",
+AVIARY_FILE = "aviary/models/test_aircraft/CERAS.csv"
+prob = ap.aviary_run_problem(AVIARY_FILE,
                              phase_info = phase_info,
-                             debug=True,
+                             debug=False,
                              optimizer="IPOPT",
                              record_filename="history.db",
                              Analysis_scheme=av.AnalysisScheme.COLLOCATION,
+                             max_iter=100
                              )
 
 
